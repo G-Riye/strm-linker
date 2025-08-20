@@ -1,10 +1,13 @@
-# STRM Linker PowerShell 启动脚本
+# STRM Linker PowerShell 启动脚本 - 变量重映射方案
 
 param(
-    [string]$ServerHost = "0.0.0.0",
+    [string]$HostAddress = "0.0.0.0",  # 使用不同的参数名
     [int]$Port = 8000,
     [switch]$Dev
 )
+
+# 内部重映射变量（避免与系统$Host冲突）
+$AppHost = $HostAddress
 
 # 颜色输出函数
 function Write-Success { param([string]$Message) Write-Host "✅ $Message" -ForegroundColor Green }
@@ -27,7 +30,7 @@ if ($env:VIRTUAL_ENV) {
     Write-Host "1. python -m venv venv" -ForegroundColor Gray
     Write-Host "2. venv\Scripts\Activate.ps1" -ForegroundColor Gray
     Write-Host "3. pip install -r requirements.txt" -ForegroundColor Gray
-    Write-Host "4. .\run.ps1" -ForegroundColor Gray
+    Write-Host "4. .\run-alternative.ps1" -ForegroundColor Gray
     Write-Host ""
     
     $continue = Read-Host "是否继续运行? (y/N)"
@@ -51,9 +54,9 @@ if (-not (Test-Path "requirements.txt")) {
     exit 1
 }
 
-# 设置环境变量
+# 设置环境变量（使用重映射的变量）
 $env:PYTHONPATH = $BackendDir
-$env:APP_HOST = $ServerHost
+$env:APP_HOST = $AppHost  # 使用局部变量而非参数直接传入
 $env:APP_PORT = $Port
 
 # 开发模式额外设置
