@@ -8,10 +8,10 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from pathlib import Path
 
-from ..services.logger import get_logger
-from ..services.scanner import StrmScanner
-from ..services.watcher import WatcherService
-from ..services.scheduler import SchedulerService
+from services.logger import get_logger
+from services.scanner import StrmScanner
+from services.watcher import WatcherService
+from services.scheduler import SchedulerService
 
 logger = get_logger(__name__)
 router = APIRouter()

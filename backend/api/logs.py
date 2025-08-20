@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 
-from ..services.logger import log_manager, get_logger
+from services.logger import log_manager, get_logger
 
 logger = get_logger(__name__)
 router = APIRouter()

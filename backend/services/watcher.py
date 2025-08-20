@@ -10,8 +10,8 @@ from typing import Dict, List, Optional, Callable
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileCreatedEvent, FileMovedEvent
 
-from .logger import get_logger
-from .scanner import StrmScanner
+from services.logger import get_logger
+from services.scanner import StrmScanner
 
 logger = get_logger(__name__)
 

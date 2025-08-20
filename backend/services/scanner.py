@@ -12,7 +12,7 @@ from typing import List, Dict, Set, Optional, Tuple
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from .logger import get_logger
+from services.logger import get_logger
 
 logger = get_logger(__name__)
 

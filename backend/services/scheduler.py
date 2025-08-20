@@ -11,8 +11,8 @@ from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.job import Job
 
-from .logger import get_logger
-from .scanner import StrmScanner
+from services.logger import get_logger
+from services.scanner import StrmScanner
 
 logger = get_logger(__name__)
 

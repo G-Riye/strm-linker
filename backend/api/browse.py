@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 
-from ..services.logger import get_logger
+from services.logger import get_logger
 
 logger = get_logger(__name__)
 router = APIRouter()
