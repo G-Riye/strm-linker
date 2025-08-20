@@ -5,6 +5,8 @@
 
 import os
 import re
+import sys
+import ctypes
 from pathlib import Path
 from typing import List, Dict, Set, Optional, Tuple
 import time
@@ -21,6 +23,18 @@ class StrmScanner:
         self.supported_video_exts = {'.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm'}
         self.subtitle_exts = {'.srt', '.ass', '.ssa', '.vtt', '.sub', '.idx'}
         self.strm_pattern = re.compile(r'(.+)\.(mp4|mkv|avi|mov|wmv|flv|webm)\.strm$', re.IGNORECASE)
+        self.is_windows = os.name == 'nt'
+        self.has_admin_rights = self._check_admin_rights() if self.is_windows else True
+    
+    def _check_admin_rights(self) -> bool:
+        """检查 Windows 管理员权限"""
+        if not self.is_windows:
+            return True
+        
+        try:
+            return ctypes.windll.shell32.IsUserAnAdmin()
+        except Exception:
+            return False
     
     def scan_directory(
         self, 
@@ -217,28 +231,44 @@ class StrmScanner:
                 # 创建软链接
                 if not dry_run:
                     try:
-                        if os.name == 'nt':  # Windows
-                            # Windows 需要管理员权限创建符号链接
+                        if self.is_windows:
+                            # Windows 权限检查
+                            if not self.has_admin_rights:
+                                logger.warning("Windows 下创建符号链接需要管理员权限，尝试创建硬链接")
+                                # 尝试创建硬链接作为备选方案
+                                try:
+                                    target_path.hardlink_to(strm_file)
+                                    logger.info(f"创建硬链接: {target_path} -> {strm_file}")
+                                except OSError:
+                                    # 如果硬链接也失败，尝试复制文件
+                                    import shutil
+                                    shutil.copy2(strm_file, target_path)
+                                    logger.info(f"复制文件: {target_path} <- {strm_file}")
+                            else:
+                                # 有管理员权限，创建符号链接
+                                target_path.symlink_to(strm_file)
+                                logger.info(f"创建符号链接: {target_path} -> {strm_file}")
+                        else:
+                            # Linux/macOS - 直接创建符号链接
                             target_path.symlink_to(strm_file)
-                        else:  # Linux/macOS
-                            target_path.symlink_to(strm_file)
+                            logger.info(f"创建符号链接: {target_path} -> {strm_file}")
                         
                         links_created += 1
                         created_links.append(str(target_path))
-                        logger.info(f"创建软链接: {target_path} -> {strm_file}")
                         
                     except OSError as e:
-                        if "privilege" in str(e).lower():
+                        error_msg = str(e).lower()
+                        if "privilege" in error_msg or "access" in error_msg:
                             return {
                                 "success": False,
-                                "error": "权限不足，Windows 下创建软链接需要管理员权限",
+                                "error": "权限不足。Windows 下建议以管理员权限运行，或启用开发者模式以创建符号链接。",
                                 "links_created": 0
                             }
                         else:
-                            logger.error(f"创建软链接失败: {e}")
+                            logger.error(f"创建链接失败: {e}")
                             return {
                                 "success": False,
-                                "error": f"创建软链接失败: {str(e)}",
+                                "error": f"创建链接失败: {str(e)}",
                                 "links_created": 0
                             }
                 else:

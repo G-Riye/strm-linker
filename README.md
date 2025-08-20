@@ -99,19 +99,32 @@ docker run -d \
 
 ### 本地开发
 
-#### 后端启动
+#### Linux/macOS
 ```bash
 cd backend
 pip install -r requirements.txt
 python main.py
-```
 
-#### 前端启动  
-```bash
+# 前端（新终端）
 cd frontend
 npm install
 npm run dev
 ```
+
+#### Windows
+```powershell
+# PowerShell 脚本（推荐）
+.\build.ps1 dev
+
+# 或手动启动
+cd backend
+python -m venv venv
+venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python main.py
+```
+
+📖 **Windows 用户**：详细说明请查看 [WINDOWS.md](WINDOWS.md)
 
 ## 📖 使用指南
 
@@ -187,9 +200,11 @@ strm-linker/
 ## 🐛 常见问题
 
 ### Windows 软链接权限问题
-Windows 下创建软链接需要管理员权限，建议：
-1. 以管理员身份运行 Docker Desktop
-2. 或使用 Linux 子系统(WSL2)
+Windows 下创建软链接需要特殊权限，解决方案：
+1. **管理员权限**：以管理员身份运行（推荐）
+2. **开发者模式**：启用 Windows 开发者模式
+3. **自动降级**：程序会自动使用硬链接或文件复制
+4. 详细配置请参考：[WINDOWS.md](WINDOWS.md)
 
 ### 字幕仍无法识别
 1. 检查字幕文件名是否与视频文件匹配
@@ -208,13 +223,19 @@ Windows 下创建软链接需要管理员权限，建议：
 - **CPU**: 1 核心
 - **内存**: 512MB RAM  
 - **存储**: 100MB 可用空间
-- **网络**: 访问媒体文件目录
+- **操作系统**: Windows 10+, Linux, macOS
 
 ### 推荐配置
 - **CPU**: 2+ 核心
 - **内存**: 1GB+ RAM
 - **存储**: SSD 存储
-- **网络**: 千兆网络
+- **Windows**: 启用开发者模式或管理员权限
+
+### Windows 特别说明
+- 支持 Windows 10/11 和 Windows Server 2019+
+- PowerShell 5.1+ 或 PowerShell Core 7.0+
+- 推荐以管理员权限运行获得最佳性能
+- 详细指南：[WINDOWS.md](WINDOWS.md)
 
 ## 🤝 贡献指南
 

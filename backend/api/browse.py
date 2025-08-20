@@ -342,10 +342,11 @@ async def get_system_drives():
         
         if os.name == 'nt':  # Windows
             import string
+            import subprocess
             
             # 获取可用的驱动器
             available_drives = ['%s:' % d for d in string.ascii_uppercase 
-                               if os.path.exists('%s:' % d)]
+                               if os.path.exists('%s:\\' % d)]
             
             for drive in available_drives:
                 drive_path = f"{drive}\\"
@@ -353,19 +354,36 @@ async def get_system_drives():
                     # 检查驱动器是否可访问
                     if os.access(drive_path, os.R_OK):
                         # 尝试获取驱动器标签
+                        display_name = drive
                         try:
+                            # 优先使用 win32api
                             import win32api
                             label = win32api.GetVolumeInformation(drive_path)[0]
                             display_name = f"{drive} ({label})" if label else drive
-                        except:
-                            display_name = drive
+                        except ImportError:
+                            try:
+                                # 备选方案：使用 wmic 命令
+                                result = subprocess.run(
+                                    ['wmic', 'logicaldisk', 'where', f'caption="{drive}"', 'get', 'volumename'],
+                                    capture_output=True, text=True, timeout=3
+                                )
+                                if result.returncode == 0:
+                                    lines = result.stdout.strip().split('\n')
+                                    if len(lines) > 1:
+                                        label = lines[1].strip()
+                                        if label:
+                                            display_name = f"{drive} ({label})"
+                            except:
+                                pass
+                        except Exception:
+                            pass
                         
                         drives.append({
                             "path": drive_path,
                             "name": display_name,
                             "type": "drive"
                         })
-                except:
+                except Exception:
                     continue
         
         else:  # Linux/macOS
