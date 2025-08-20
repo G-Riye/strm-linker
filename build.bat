@@ -99,7 +99,7 @@ goto %ACTION% 2>nul || goto help
     echo python -m venv venv
     echo venv\Scripts\activate
     echo pip install -r requirements.txt
-    echo python main.py
+    echo run.bat
     echo.
     echo 前端服务：
     echo cd frontend
@@ -116,7 +116,7 @@ goto %ACTION% 2>nul || goto help
     REM 测试后端
     if exist "backend\requirements.txt" (
         cd /d "%~dp0\backend"
-        python -c "from main import app; print('✅ 后端应用检查通过')" 2>nul
+        python -c "import sys; sys.path.insert(0, '.'); from main import app; print('✅ 后端应用检查通过')" 2>nul
         if %errorlevel% neq 0 (
             call :print_message "❌ 后端应用检查失败" "RED"
             cd /d "%~dp0"

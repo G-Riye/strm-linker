@@ -180,7 +180,7 @@ switch ($Action) {
         $response = Read-Host "`n是否自动启动开发环境? (y/N)"
         if ($response -eq 'y' -or $response -eq 'Y') {
             Write-Warning "启动后端服务..."
-            Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$ScriptDir\backend'; python -m venv venv; venv\Scripts\Activate.ps1; pip install -r requirements.txt; python main.py"
+            Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$ScriptDir\backend'; python -m venv venv; venv\Scripts\Activate.ps1; pip install -r requirements.txt; .\run.ps1 -Dev"
             
             Start-Sleep -Seconds 3
             
@@ -197,7 +197,7 @@ switch ($Action) {
         if (Test-Path (Join-Path $backendPath "requirements.txt")) {
             Push-Location $backendPath
             try {
-                python -c "from main import app; print('✅ 后端应用检查通过')" 2>$null
+                python -c "import sys; sys.path.insert(0, '.'); from main import app; print('✅ 后端应用检查通过')" 2>$null
                 if ($LASTEXITCODE -ne 0) {
                     Write-Error "后端应用检查失败"
                     Pop-Location
