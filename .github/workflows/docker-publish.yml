@@ -11,7 +11,7 @@ on:
 
 env:
   # DockerHub 镜像名称（请修改为你的 DockerHub 用户名）
-  IMAGE_NAME: yourdockerhubusername/strm-linker
+  IMAGE_NAME: riye/strm-linker
 
 jobs:
   build-and-push:
