@@ -1,0 +1,87 @@
+# STRM Linker 项目忽略文件
+
+# 依赖和构建产物
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.output/
+/frontend/.nuxt/
+
+# Python 相关
+/backend/__pycache__/
+/backend/*.py[cod]
+/backend/*$py.class
+/backend/*.so
+/backend/.Python
+/backend/build/
+/backend/develop-eggs/
+/backend/dist/
+/backend/downloads/
+/backend/eggs/
+/backend/.eggs/
+/backend/lib/
+/backend/lib64/
+/backend/parts/
+/backend/sdist/
+/backend/var/
+/backend/wheels/
+/backend/*.egg-info/
+/backend/.installed.cfg
+/backend/*.egg
+
+# 虚拟环境
+/venv/
+/env/
+/ENV/
+/.venv/
+/.env/
+
+# IDE 和编辑器
+/.vscode/
+/.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# 日志文件
+*.log
+/logs/
+/backend/logs/
+
+# 配置文件（可能包含敏感信息）
+/.env
+/.env.local
+/.env.development.local
+/.env.test.local
+/.env.production.local
+/config.yaml
+/config.json
+
+# 运行时数据
+/data/
+/tmp/
+/cache/
+
+# Docker 数据卷
+/docker/data/
+
+# 测试覆盖率
+/.coverage
+/htmlcov/
+/.pytest_cache/
+
+# 打包文件
+*.tar.gz
+*.zip
+*.rar
+
+# 临时文件
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# 系统生成的文件
+.fuse_hidden*
+.nfs*

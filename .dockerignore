@@ -1,0 +1,69 @@
+# Docker 构建忽略文件
+
+# Git 相关
+.git
+.gitignore
+.gitattributes
+
+# IDE 相关
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Node.js 相关
+frontend/node_modules
+frontend/dist
+frontend/.nuxt
+frontend/.output
+
+# Python 相关
+backend/__pycache__
+backend/*.pyc
+backend/*.pyo
+backend/*.pyd
+backend/.Python
+backend/env
+backend/venv
+backend/ENV
+backend/.env
+backend/.venv
+
+# 日志文件
+*.log
+logs/
+
+# 临时文件
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# 文档和示例
+README.md
+docs/
+examples/
+*.md
+
+# 测试文件
+tests/
+test/
+*test*
+*.test.js
+
+# 构建产物（除了最终需要的）
+build/
+dist/ 
+target/
+out/
+
+# Docker 相关（避免递归）
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# 开发环境文件
+.env.local
+.env.development
+.env.test

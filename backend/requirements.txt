@@ -1,0 +1,25 @@
+# FastAPI 和 Web 框架
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+
+# 文件系统监听
+watchdog==3.0.0
+
+# 定时任务
+APScheduler==3.10.4
+
+# 日志处理
+python-json-logger==2.0.7
+
+# CORS 支持
+python-multipart==0.0.6
+
+# 静态文件服务
+aiofiles==23.2.1
+
+# 配置管理
+python-dotenv==1.0.0
+
+# 系统工具
+psutil==5.9.6
