@@ -362,6 +362,6 @@ class SchedulerService:
             except Exception as e:
                 logger.error(f"任务回调函数执行失败: {e}")
     
-    def is_running(self) -> bool:
+    def get_running_status(self) -> bool:
         """检查调度器是否正在运行"""
         return self.is_running and self.scheduler and self.scheduler.running

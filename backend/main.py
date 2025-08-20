@@ -119,8 +119,8 @@ async def health_check():
         "status": "healthy",
         "version": "1.0.0",
         "services": {
-            "scheduler": scheduler_service.is_running() if scheduler_service else False,
-            "watcher": watcher_service.is_running() if watcher_service else False
+            "scheduler": scheduler_service.get_running_status() if scheduler_service else False,
+            "watcher": watcher_service.get_running_status() if watcher_service else False
         }
     }
 

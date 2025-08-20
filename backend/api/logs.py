@@ -94,7 +94,7 @@ async def get_log_levels():
     return {
         "levels": [
             {"value": "DEBUG", "label": "调试", "color": "#909399"},
-            {"value": "INFO", "label": "信息", "#409EFF"},
+            {"value": "INFO", "label": "信息", "color": "#409EFF"},
             {"value": "WARNING", "label": "警告", "color": "#E6A23C"},
             {"value": "ERROR", "label": "错误", "color": "#F56C6C"},
             {"value": "CRITICAL", "label": "严重", "color": "#F56C6C"}

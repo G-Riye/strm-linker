@@ -263,7 +263,7 @@ class WatcherService:
             except Exception as e:
                 logger.error(f"回调函数执行失败: {e}")
     
-    def is_running(self) -> bool:
+    def get_running_status(self) -> bool:
         """检查服务是否正在运行"""
         return self.is_running
     
