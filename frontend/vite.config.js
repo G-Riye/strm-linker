@@ -31,6 +31,14 @@ export default defineConfig({
   },
   build: {
     target: 'es2015',
-    outDir: 'dist'
+    outDir: 'dist',
+    assetsDir: 'static',
+    rollupOptions: {
+      output: {
+        assetFileNames: 'static/[name].[hash].[ext]',
+        chunkFileNames: 'static/[name].[hash].js',
+        entryFileNames: 'static/[name].[hash].js'
+      }
+    }
   }
 })

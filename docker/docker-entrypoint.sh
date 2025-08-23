@@ -26,6 +26,14 @@ if [ ! -f "/app/frontend/dist/index.html" ]; then
     exit 1
 fi
 
+# 检查静态资源目录
+if [ ! -d "/app/frontend/dist/static" ] && [ ! -d "/app/frontend/dist/assets" ]; then
+    echo "⚠️  警告: 静态资源目录不存在，但继续启动..."
+    # 创建空的静态资源目录
+    mkdir -p /app/frontend/dist/static
+    chown -R app:app /app/frontend/dist
+fi
+
 # 测试 FastAPI 应用是否可以正常导入
 echo "🔍 检查 FastAPI 应用..."
 cd /app/backend
