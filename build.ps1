@@ -197,7 +197,7 @@ switch ($Action) {
         if (Test-Path (Join-Path $backendPath "requirements.txt")) {
             Push-Location $backendPath
             try {
-                python -c "import sys; sys.path.insert(0, '.'); from main import app; print('✅ 后端应用检查通过')" 2>$null
+                py -c "import sys; sys.path.insert(0, '.'); from main import app; print('Backend check passed')" 2>$null
                 if ($LASTEXITCODE -ne 0) {
                     Write-Error "后端应用检查失败"
                     Pop-Location
@@ -233,7 +233,7 @@ switch ($Action) {
             }
         }
         
-        Write-Success "所有测试通过"
+        Write-Success "All tests passed"
     }
     
     "admin-check" {

@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  strm-linker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      
+    container_name: strm-linker
+    restart: unless-stopped
+    
+    ports:
+      - "8080:80"  # Web 界面端口
+    
+    volumes:
+      # 数据持久化（日志、配置等）
+      - ./data:/app/data
+      
+      # 挂载媒体目录（Unraid 用户需要修改这些路径）
+      # 示例：将你的媒体目录挂载到容器中
+      - /mnt/user/media:/media:rw
+      # 或者分别挂载不同的媒体目录
+      # - /mnt/user/movies:/media/movies:rw
+      # - /mnt/user/tv:/media/tv:rw
+      
+    environment:
+      # 基础配置
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app/backend
+      - APP_HOST=0.0.0.0
+      - APP_PORT=8000
+      - LOG_LEVEL=INFO
+      
+      # 时区设置
+      - TZ=Asia/Shanghai
+      
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    
+    # 资源限制（适合 Unraid 环境）
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.5'
+
+# 创建数据卷
+volumes:
+  strm-linker-data:
+    driver: local

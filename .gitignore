@@ -7,6 +7,28 @@
 /frontend/.nuxt/
 
 # Python 相关
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 后端特定
 /backend/__pycache__/
 /backend/*.py[cod]
 /backend/*$py.class
@@ -34,6 +56,7 @@
 /ENV/
 /.venv/
 /.env/
+/backend/venv/
 
 # IDE 和编辑器
 /.vscode/
@@ -48,6 +71,10 @@ Thumbs.db
 *.log
 /logs/
 /backend/logs/
+
+# 测试文件（临时）
+/test_*.py
+/backend/test_*.py
 
 # 配置文件（可能包含敏感信息）
 /.env
@@ -75,6 +102,10 @@ Thumbs.db
 *.tar.gz
 *.zip
 *.rar
+
+# 发布相关
+RELEASE_NOTES.md
+strm-linker-v*.zip
 
 # 临时文件
 *.tmp
