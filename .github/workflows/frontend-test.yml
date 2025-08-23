@@ -1,0 +1,54 @@
+name: Frontend Test
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths: [ 'frontend/**' ]
+  pull_request:
+    branches: [ main ]
+    paths: [ 'frontend/**' ]
+
+jobs:
+  frontend-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install dependencies
+      run: |
+        cd frontend
+        npm ci
+
+    - name: Check file structure
+      run: |
+        echo "📁 Frontend structure:"
+        ls -la frontend/
+        echo "📁 Source structure:"
+        ls -la frontend/src/
+        echo "📁 Views structure:"
+        ls -la frontend/src/views/
+
+    - name: Build frontend
+      run: |
+        cd frontend
+        npm run build
+
+    - name: Verify build output
+      run: |
+        if [ -f "frontend/dist/index.html" ]; then
+          echo "✅ Frontend build successful"
+          echo "📁 Build output:"
+          ls -la frontend/dist/
+        else
+          echo "❌ Frontend build failed"
+          exit 1
+        fi
