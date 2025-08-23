@@ -1,0 +1,71 @@
+name: Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install Python dependencies
+      run: |
+        cd backend
+        pip install -r requirements.txt
+
+    - name: Run Python tests
+      run: |
+        cd backend
+        # 基本语法检查
+        python -m py_compile main.py
+        python -c "from main import app; print('✅ FastAPI app loads successfully')"
+        
+        # 检查核心模块
+        python -c "from services.scanner import StrmScanner; print('✅ Scanner module loads successfully')"
+        python -c "from services.logger import get_logger; print('✅ Logger module loads successfully')"
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Install Node.js dependencies
+      run: |
+        cd frontend
+        npm install
+
+    - name: Build frontend
+      run: |
+        cd frontend
+        npm run build
+
+    - name: Test frontend build
+      run: |
+        if [ -f "frontend/dist/index.html" ]; then
+          echo "✅ Frontend build successful"
+        else
+          echo "❌ Frontend build failed"
+          exit 1
+        fi
+
+    - name: Check file structure
+      run: |
+        echo "📁 Checking project structure..."
+        ls -la
+        echo "📁 Backend structure:"
+        ls -la backend/
+        echo "📁 Frontend structure:"
+        ls -la frontend/
+        echo "📁 Docker structure:"
+        ls -la docker/
