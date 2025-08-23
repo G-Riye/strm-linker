@@ -33,8 +33,8 @@ jobs:
         echo "" >> CHANGELOG.md
         echo "### 📦 Docker 镜像" >> CHANGELOG.md
         echo "\`\`\`bash" >> CHANGELOG.md
-        echo "docker pull yourdockerhubusername/strm-linker:${{ steps.tag.outputs.TAG_NAME }}" >> CHANGELOG.md
-        echo "docker pull yourdockerhubusername/strm-linker:latest" >> CHANGELOG.md
+        echo "docker pull riye/strm-linker:${{ steps.tag.outputs.TAG_NAME }}" >> CHANGELOG.md
+        echo "docker pull riye/strm-linker:latest" >> CHANGELOG.md
         echo "\`\`\`" >> CHANGELOG.md
         echo "" >> CHANGELOG.md
         echo "### 🔧 快速启动" >> CHANGELOG.md
@@ -44,7 +44,7 @@ jobs:
         echo "  -p 8080:80 \\" >> CHANGELOG.md
         echo "  -v /path/to/your/media:/media:rw \\" >> CHANGELOG.md
         echo "  -v ./data:/app/data \\" >> CHANGELOG.md
-        echo "  yourdockerhubusername/strm-linker:${{ steps.tag.outputs.TAG_NAME }}" >> CHANGELOG.md
+        echo "  riye/strm-linker:${{ steps.tag.outputs.TAG_NAME }}" >> CHANGELOG.md
         echo "\`\`\`" >> CHANGELOG.md
 
     - name: Create Release

@@ -2,8 +2,8 @@ version: '3.8'
 
 services:
   strm-linker:
-    # 使用 DockerHub 镜像（发布后取消注释下面这行，注释 build 部分）
-    # image: yourdockerhubusername/strm-linker:latest
+    # 使用 Docker 镜像（发布后取消注释下面这行，注释 build 部分）
+# image: riye/strm-linker:latest
     
     # 本地构建（开发时使用）
     build:

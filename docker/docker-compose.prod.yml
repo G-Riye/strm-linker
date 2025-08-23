@@ -5,8 +5,8 @@ version: '3.8'
 
 services:
   strm-linker:
-    # 使用 DockerHub 镜像
-    image: yourdockerhubusername/strm-linker:latest
+    # 使用 Docker 镜像
+    image: riye/strm-linker:latest
     
     container_name: strm-linker
     restart: unless-stopped
