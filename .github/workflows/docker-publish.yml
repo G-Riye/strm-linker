@@ -102,7 +102,7 @@ jobs:
     - name: Install Node.js dependencies
       run: |
         cd frontend
-        npm ci
+        npm install
 
     - name: Build frontend
       run: |

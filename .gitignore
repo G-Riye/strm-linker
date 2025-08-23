@@ -6,6 +6,7 @@
 /frontend/.output/
 /frontend/.nuxt/
 # 注意：package-lock.json 应该被提交以保持依赖同步
+!/frontend/package-lock.json
 
 # Python 相关
 __pycache__/
