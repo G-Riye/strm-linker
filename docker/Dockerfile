@@ -1,14 +1,14 @@
 # 多阶段构建 Dockerfile - 优化版本
 # 阶段1: 前端构建
-FROM node:18-alpine as frontend-builder
+FROM node:18-alpine AS frontend-builder
 
 WORKDIR /app/frontend
 
 # 复制依赖文件（利用 Docker 缓存）
 COPY frontend/package*.json ./
 
-# 安装依赖（只安装生产依赖以减少体积）
-RUN npm ci --only=production
+# 安装依赖
+RUN npm install
 
 # 复制前端源码并构建
 COPY frontend/ ./
@@ -18,7 +18,7 @@ RUN npm run build
 RUN rm -rf node_modules
 
 # 阶段2: Python 依赖构建
-FROM python:3.11-slim as python-builder
+FROM python:3.11-slim AS python-builder
 
 # 安装编译依赖
 RUN apt-get update && apt-get install -y \
