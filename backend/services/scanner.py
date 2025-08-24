@@ -20,9 +20,16 @@ class StrmScanner:
     """STRM 文件扫描器和软链管理器"""
     
     def __init__(self):
-        self.supported_video_exts = {'.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm'}
-        self.subtitle_exts = {'.srt', '.ass', '.ssa', '.vtt', '.sub', '.idx'}
-        self.strm_pattern = re.compile(r'(.+)\.\((mp4|mkv|avi|mov|wmv|flv|webm)\)\.strm$', re.IGNORECASE)
+        # 支持的视频扩展名
+        self.video_extensions = {'.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm', '.m4v', '.ts', '.mts'}
+        
+        # 支持的元数据扩展名
+        self.metadata_extensions = {'.nfo', '.srt', '.ass', '.ssa', '.vtt', '.sub', '.idx', '.json', '.xml', '.jpg', '.jpeg', '.png', '.tbn', '.fanart.jpg', '.poster.jpg'}
+        
+        # STRM 文件匹配模式：xxx.(ext).strm
+        self.strm_pattern = re.compile(r'(.+)\.\(([^.]+)\)\.strm$', re.IGNORECASE)
+        
+        # 操作系统检测
         self.is_windows = os.name == 'nt'
         self.has_admin_rights = self._check_admin_rights() if self.is_windows else True
     
@@ -48,7 +55,7 @@ class StrmScanner:
         
         Args:
             directory: 扫描的目录路径
-            target_formats: 目标视频格式列表（如 ['mp4', 'mkv']）
+            target_formats: 目标视频格式列表（已废弃，保留兼容性）
             recursive: 是否递归扫描子目录
             dry_run: 是否只是预览不实际执行
             
@@ -84,11 +91,7 @@ class StrmScanner:
             }
         
         # 处理软链接创建
-        results = self._process_strm_files(
-            strm_files, 
-            target_formats or ['mp4', 'mkv'],
-            dry_run
-        )
+        results = self._process_strm_files(strm_files, dry_run)
         
         duration = time.time() - start_time
         logger.info(f"扫描完成，耗时: {duration:.2f}秒")
@@ -116,7 +119,7 @@ class StrmScanner:
                 pattern = "*.strm"
             
             for file_path in directory.glob(pattern):
-                if file_path.is_file() and self._is_video_strm(file_path):
+                if file_path.is_file() and self._is_valid_strm(file_path):
                     strm_files.append(file_path)
         
         except Exception as e:
@@ -124,15 +127,19 @@ class StrmScanner:
         
         return strm_files
     
-    def _is_video_strm(self, strm_path: Path) -> bool:
-        """判断是否是视频格式的 .strm 文件"""
+    def _is_valid_strm(self, strm_path: Path) -> bool:
+        """判断是否是有效的 .strm 文件"""
         match = self.strm_pattern.match(strm_path.name)
-        return match is not None
+        if not match:
+            return False
+        
+        # 检查扩展名是否在支持的视频格式中
+        extension = match.group(2).lower()
+        return f'.{extension}' in self.video_extensions
     
     def _process_strm_files(
         self, 
         strm_files: List[Path], 
-        target_formats: List[str],
         dry_run: bool
     ) -> Dict[str, any]:
         """批量处理 .strm 文件"""
@@ -149,7 +156,6 @@ class StrmScanner:
                 executor.submit(
                     self._process_single_strm, 
                     strm_file, 
-                    target_formats, 
                     dry_run
                 ): strm_file 
                 for strm_file in strm_files
@@ -196,7 +202,6 @@ class StrmScanner:
     def _process_single_strm(
         self, 
         strm_file: Path, 
-        target_formats: List[str],
         dry_run: bool
     ) -> Dict[str, any]:
         """处理单个 .strm 文件"""
@@ -210,81 +215,64 @@ class StrmScanner:
                     "links_created": 0
                 }
             
-            base_name = match.group(1)  # 去掉格式后缀的基础文件名
-            original_ext = match.group(2)  # 原始视频格式
+            base_name = match.group(1)  # 基础文件名
+            video_ext = match.group(2)  # 视频扩展名
             
             parent_dir = strm_file.parent
             links_created = 0
             created_links = []
             
-            # 为每种目标格式创建软链接
-            for target_ext in target_formats:
-                if target_ext.lower() == original_ext.lower():
-                    continue  # 跳过原始格式
-                
-                target_name = f"{base_name}.{target_ext}"
-                target_path = parent_dir / target_name
-                
-                # 检查目标文件是否已存在
-                if target_path.exists():
-                    logger.debug(f"目标文件已存在，跳过: {target_path}")
-                    continue
-                
-                # 创建软链接
+            # 1. 创建视频软链接 (xxx.mp4 -> xxx.(mp4).strm)
+            video_link_name = f"{base_name}.{video_ext}"
+            video_link_path = parent_dir / video_link_name
+            
+            if not video_link_path.exists():
                 if not dry_run:
                     try:
-                        if self.is_windows:
-                            # Windows 权限检查
-                            if not self.has_admin_rights:
-                                logger.warning("Windows 下创建符号链接需要管理员权限，尝试创建硬链接")
-                                # 尝试创建硬链接作为备选方案
-                                try:
-                                    target_path.hardlink_to(strm_file)
-                                    logger.info(f"创建硬链接: {target_path} -> {strm_file}")
-                                except OSError:
-                                    # 如果硬链接也失败，尝试复制文件
-                                    import shutil
-                                    shutil.copy2(strm_file, target_path)
-                                    logger.info(f"复制文件: {target_path} <- {strm_file}")
-                            else:
-                                # 有管理员权限，创建符号链接
-                                target_path.symlink_to(strm_file)
-                                logger.info(f"创建符号链接: {target_path} -> {strm_file}")
+                        if self.is_windows and not self.has_admin_rights:
+                            # Windows 下没有管理员权限，尝试创建硬链接
+                            try:
+                                video_link_path.hardlink_to(strm_file)
+                                logger.info(f"创建视频硬链接: {video_link_path} -> {strm_file}")
+                                links_created += 1
+                                created_links.append(str(video_link_path))
+                            except OSError:
+                                # 如果硬链接也失败，尝试复制文件
+                                import shutil
+                                shutil.copy2(strm_file, video_link_path)
+                                logger.info(f"复制视频文件: {video_link_path} <- {strm_file}")
+                                links_created += 1
+                                created_links.append(str(video_link_path))
                         else:
-                            # Linux/macOS - 直接创建符号链接
-                            target_path.symlink_to(strm_file)
-                            logger.info(f"创建符号链接: {target_path} -> {strm_file}")
-                        
-                        links_created += 1
-                        created_links.append(str(target_path))
-                        
+                            video_link_path.symlink_to(strm_file)
+                            logger.info(f"创建视频软链接: {video_link_path} -> {strm_file}")
+                            links_created += 1
+                            created_links.append(str(video_link_path))
                     except OSError as e:
-                        error_msg = str(e).lower()
-                        if "privilege" in error_msg or "access" in error_msg:
-                            return {
-                                "success": False,
-                                "error": "权限不足。Windows 下建议以管理员权限运行，或启用开发者模式以创建符号链接。",
-                                "links_created": 0
-                            }
-                        else:
-                            logger.error(f"创建链接失败: {e}")
-                            return {
-                                "success": False,
-                                "error": f"创建链接失败: {str(e)}",
-                                "links_created": 0
-                            }
+                        logger.error(f"创建视频链接失败: {e}")
+                        return {
+                            "success": False,
+                            "error": f"创建视频链接失败: {str(e)}",
+                            "links_created": 0
+                        }
                 else:
-                    # 预览模式
                     links_created += 1
-                    created_links.append(str(target_path))
-                    logger.info(f"[预览] 将创建软链接: {target_path} -> {strm_file}")
+                    created_links.append(str(video_link_path))
+                    logger.info(f"[预览] 将创建视频软链接: {video_link_path} -> {strm_file}")
+            
+            # 2. 查找并创建对应的元数据软链接
+            metadata_links_created = self._create_metadata_links(
+                parent_dir, base_name, video_ext, dry_run
+            )
+            links_created += metadata_links_created["count"]
+            created_links.extend(metadata_links_created["links"])
             
             return {
                 "success": True,
                 "links_created": links_created,
                 "created_links": created_links,
                 "base_name": base_name,
-                "original_format": original_ext
+                "video_extension": video_ext
             }
             
         except Exception as e:
@@ -294,6 +282,62 @@ class StrmScanner:
                 "error": str(e),
                 "links_created": 0
             }
+    
+    def _create_metadata_links(
+        self, 
+        parent_dir: Path, 
+        base_name: str, 
+        video_ext: str, 
+        dry_run: bool
+    ) -> Dict[str, any]:
+        """创建元数据软链接"""
+        links_created = 0
+        created_links = []
+        
+        # 查找所有可能的元数据文件
+        for metadata_ext in self.metadata_extensions:
+            # 查找源元数据文件 (xxx.nfo, xxx.srt 等)
+            source_metadata_file = parent_dir / f"{base_name}{metadata_ext}"
+            
+            if source_metadata_file.exists():
+                # 创建对应的元数据软链接 (xxx.(mp4).nfo -> xxx.nfo)
+                metadata_link_name = f"{base_name}.({video_ext}){metadata_ext}"
+                metadata_link_path = parent_dir / metadata_link_name
+                
+                if not metadata_link_path.exists():
+                    if not dry_run:
+                        try:
+                            if self.is_windows and not self.has_admin_rights:
+                                # Windows 下没有管理员权限，尝试创建硬链接
+                                try:
+                                    metadata_link_path.hardlink_to(source_metadata_file)
+                                    logger.info(f"创建元数据硬链接: {metadata_link_path} -> {source_metadata_file}")
+                                    links_created += 1
+                                    created_links.append(str(metadata_link_path))
+                                except OSError:
+                                    # 如果硬链接也失败，尝试复制文件
+                                    import shutil
+                                    shutil.copy2(source_metadata_file, metadata_link_path)
+                                    logger.info(f"复制元数据文件: {metadata_link_path} <- {source_metadata_file}")
+                                    links_created += 1
+                                    created_links.append(str(metadata_link_path))
+                            else:
+                                metadata_link_path.symlink_to(source_metadata_file)
+                                logger.info(f"创建元数据软链接: {metadata_link_path} -> {source_metadata_file}")
+                                links_created += 1
+                                created_links.append(str(metadata_link_path))
+                        except OSError as e:
+                            logger.error(f"创建元数据链接失败: {metadata_link_path} -> {source_metadata_file}: {e}")
+                            # 继续处理其他文件，不中断整个流程
+                    else:
+                        links_created += 1
+                        created_links.append(str(metadata_link_path))
+                        logger.info(f"[预览] 将创建元数据软链接: {metadata_link_path} -> {source_metadata_file}")
+        
+        return {
+            "count": links_created,
+            "links": created_links
+        }
     
     def cleanup_broken_links(self, directory: str, recursive: bool = True) -> Dict[str, any]:
         """清理目录中的损坏软链接"""
