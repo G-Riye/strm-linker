@@ -194,35 +194,35 @@
           </el-descriptions-item>
         </el-descriptions>
 
-        <div v-if="executionResult.errors?.length" class="mt-3">
+        <div v-if="executionResult.errors && Array.isArray(executionResult.errors) && executionResult.errors.length > 0" class="mt-3">
           <h4>错误详情：</h4>
           <el-alert
             v-for="(error, index) in executionResult.errors"
-            :key="index"
-            :title="error.file"
-            :description="error.error"
+            :key="`error-${index}`"
+            :title="error.file || `错误 ${index + 1}`"
+            :description="error.error || '未知错误'"
             type="error"
             show-icon
             class="mb-2"
           />
         </div>
 
-        <div v-if="executionResult.details?.length" class="mt-3">
+        <div v-if="executionResult.details && Array.isArray(executionResult.details) && executionResult.details.length > 0" class="mt-3">
           <h4>处理详情：</h4>
           <el-collapse>
             <el-collapse-item
               v-for="(detail, index) in executionResult.details"
-              :key="index"
-              :title="detail.file"
+              :key="`detail-${index}`"
+              :title="detail.file || `文件 ${index + 1}`"
             >
               <div v-if="detail.result">
-                <p><strong>基础名称：</strong>{{ detail.result.base_name }}</p>
-                <p><strong>视频格式：</strong>{{ detail.result.video_extension }}</p>
-                <p><strong>创建链接数：</strong>{{ detail.result.links_created }}</p>
-                <div v-if="detail.result.created_links?.length">
+                <p><strong>基础名称：</strong>{{ detail.result.base_name || '未知' }}</p>
+                <p><strong>视频格式：</strong>{{ detail.result.video_extension || '未知' }}</p>
+                <p><strong>创建链接数：</strong>{{ detail.result.links_created || 0 }}</p>
+                <div v-if="detail.result.created_links && Array.isArray(detail.result.created_links) && detail.result.created_links.length > 0">
                   <p><strong>创建的链接：</strong></p>
                   <ul>
-                    <li v-for="link in detail.result.created_links" :key="link">
+                    <li v-for="(link, linkIndex) in detail.result.created_links" :key="`link-${linkIndex}`">
                       {{ link }}
                     </li>
                   </ul>
@@ -290,9 +290,11 @@ const loadConfigs = async () => {
   loading.value = true
   try {
     const response = await configApi.getScanConfigs()
-    configs.value = response.configs || []
+    configs.value = Array.isArray(response.configs) ? response.configs : []
   } catch (error) {
     console.error('加载配置列表失败:', error)
+    ElMessage.error('加载配置列表失败: ' + (error.message || '未知错误'))
+    configs.value = []
   } finally {
     loading.value = false
   }
@@ -317,11 +319,22 @@ const saveConfig = async () => {
     await configFormRef.value.validate()
     saving.value = true
     
+    // 确保扩展名数组是有效的
+    const formData = {
+      ...configForm,
+      custom_video_extensions: Array.isArray(configForm.custom_video_extensions) 
+        ? configForm.custom_video_extensions.filter(ext => ext && typeof ext === 'string')
+        : [],
+      custom_metadata_extensions: Array.isArray(configForm.custom_metadata_extensions)
+        ? configForm.custom_metadata_extensions.filter(ext => ext && typeof ext === 'string')
+        : []
+    }
+    
     if (editingConfig.value) {
-      await configApi.updateScanConfig(editingConfig.value.config_id, configForm)
+      await configApi.updateScanConfig(editingConfig.value.config_id, formData)
       ElMessage.success('配置更新成功')
     } else {
-      await configApi.createScanConfig(configForm)
+      await configApi.createScanConfig(formData)
       ElMessage.success('配置创建成功')
     }
     
@@ -330,6 +343,7 @@ const saveConfig = async () => {
     loadConfigs()
   } catch (error) {
     console.error('保存配置失败:', error)
+    ElMessage.error('保存配置失败: ' + (error.message || '未知错误'))
   } finally {
     saving.value = false
   }
@@ -339,12 +353,16 @@ const saveConfig = async () => {
 const editConfig = (config) => {
   editingConfig.value = config
   Object.assign(configForm, {
-    name: config.name,
-    description: config.description,
-    directory: config.directory,
-    recursive: config.recursive,
-    custom_video_extensions: config.custom_video_extensions || [],
-    custom_metadata_extensions: config.custom_metadata_extensions || []
+    name: config.name || '',
+    description: config.description || '',
+    directory: config.directory || '',
+    recursive: config.recursive !== undefined ? config.recursive : true,
+    custom_video_extensions: Array.isArray(config.custom_video_extensions) 
+      ? config.custom_video_extensions.filter(ext => ext && typeof ext === 'string')
+      : [],
+    custom_metadata_extensions: Array.isArray(config.custom_metadata_extensions)
+      ? config.custom_metadata_extensions.filter(ext => ext && typeof ext === 'string')
+      : []
   })
   showCreateDialog.value = true
 }
@@ -372,11 +390,23 @@ const deleteConfig = async (configId) => {
 const executeConfig = async (configId, dryRun = false) => {
   try {
     const result = await configApi.executeScanConfig(configId, dryRun)
-    executionResult.value = result
+    
+    // 确保返回的数据结构正确
+    executionResult.value = {
+      directory: result.directory || '',
+      processed: result.processed || 0,
+      created_links: result.created_links || 0,
+      skipped: result.skipped || 0,
+      errors: Array.isArray(result.errors) ? result.errors : [],
+      details: Array.isArray(result.details) ? result.details : [],
+      duration: result.duration || 0
+    }
+    
     showResultDialog.value = true
     ElMessage.success(dryRun ? '预览完成' : '执行完成')
   } catch (error) {
     console.error('执行配置失败:', error)
+    ElMessage.error('执行配置失败: ' + (error.message || '未知错误'))
   }
 }
 
