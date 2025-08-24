@@ -52,6 +52,11 @@ class ScheduleConfig(BaseModel):
     enabled: bool = Field(default=True, description="是否启用")
     recursive: bool = Field(default=True, description="是否递归")
 
+class ExtensionConfig(BaseModel):
+    """扩展名配置"""
+    video_extensions: List[str] = Field(default=[], description="自定义视频扩展名")
+    metadata_extensions: List[str] = Field(default=[], description="自定义元数据扩展名")
+
 # 全局服务实例（将在 main.py 中注入）
 scanner = StrmScanner()
 watcher_service = None
@@ -276,6 +281,69 @@ async def get_scheduler_status():
         return {"is_running": False}
     
     return {"is_running": scheduler_service.is_running()}
+
+# 扩展名管理相关接口
+@router.get("/extensions")
+async def get_supported_extensions():
+    """获取支持的扩展名列表"""
+    global scanner
+    
+    extensions = scanner.get_supported_extensions()
+    return {
+        "video_extensions": sorted(list(extensions["video_extensions"])),
+        "metadata_extensions": sorted(list(extensions["metadata_extensions"]))
+    }
+
+@router.post("/extensions/video")
+async def add_video_extension(extension: str):
+    """添加自定义视频扩展名"""
+    global scanner
+    
+    try:
+        scanner.add_video_extension(extension)
+        return {"message": f"成功添加视频扩展名: {extension}"}
+    except Exception as e:
+        logger.error(f"添加视频扩展名失败: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/extensions/metadata")
+async def add_metadata_extension(extension: str):
+    """添加自定义元数据扩展名"""
+    global scanner
+    
+    try:
+        scanner.add_metadata_extension(extension)
+        return {"message": f"成功添加元数据扩展名: {extension}"}
+    except Exception as e:
+        logger.error(f"添加元数据扩展名失败: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/extensions/batch")
+async def add_extensions_batch(config: ExtensionConfig):
+    """批量添加扩展名"""
+    global scanner
+    
+    try:
+        results = {
+            "video_extensions": [],
+            "metadata_extensions": []
+        }
+        
+        for ext in config.video_extensions:
+            scanner.add_video_extension(ext)
+            results["video_extensions"].append(ext)
+        
+        for ext in config.metadata_extensions:
+            scanner.add_metadata_extension(ext)
+            results["metadata_extensions"].append(ext)
+        
+        return {
+            "message": "批量添加扩展名成功",
+            "added": results
+        }
+    except Exception as e:
+        logger.error(f"批量添加扩展名失败: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 # 服务注入函数（在 main.py 中调用）
 def set_services(watcher: WatcherService, scheduler: SchedulerService):

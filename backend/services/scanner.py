@@ -19,12 +19,41 @@ logger = get_logger(__name__)
 class StrmScanner:
     """STRM 文件扫描器和软链管理器"""
     
-    def __init__(self):
-        # 支持的视频扩展名
-        self.video_extensions = {'.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm', '.m4v', '.ts', '.mts'}
+    def __init__(self, custom_video_extensions: Optional[List[str]] = None, custom_metadata_extensions: Optional[List[str]] = None):
+        # 默认支持的视频扩展名
+        default_video_extensions = {'.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm', '.m4v', '.ts', '.mts', '.3gp', '.ogv', '.rmvb', '.asf', '.divx', '.xvid'}
         
-        # 支持的元数据扩展名
-        self.metadata_extensions = {'.nfo', '.srt', '.ass', '.ssa', '.vtt', '.sub', '.idx', '.json', '.xml', '.jpg', '.jpeg', '.png', '.tbn', '.fanart.jpg', '.poster.jpg'}
+        # 默认支持的元数据扩展名（影视库常用格式）
+        default_metadata_extensions = {
+            # 字幕文件
+            '.srt', '.ass', '.ssa', '.vtt', '.sub', '.idx', '.smi', '.sami', '.rt', '.txt',
+            # 元数据文件
+            '.nfo', '.xml', '.json', '.yaml', '.yml',
+            # 图片文件
+            '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp',
+            # 影视库专用图片
+            '.tbn', '.fanart.jpg', '.poster.jpg', '.banner.jpg', '.clearart.png', '.clearlogo.png', 
+            '.disc.png', '.landscape.jpg', '.logo.png', '.thumb.jpg', '.season01.jpg', '.season02.jpg',
+            # 音频文件
+            '.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a',
+            # 其他元数据
+            '.sfv', '.md5', '.sha1', '.sha256', '.info', '.desc', '.plot', '.tag'
+        }
+        
+        # 合并用户自定义扩展名
+        self.video_extensions = default_video_extensions.copy()
+        if custom_video_extensions:
+            for ext in custom_video_extensions:
+                if not ext.startswith('.'):
+                    ext = '.' + ext
+                self.video_extensions.add(ext.lower())
+        
+        self.metadata_extensions = default_metadata_extensions.copy()
+        if custom_metadata_extensions:
+            for ext in custom_metadata_extensions:
+                if not ext.startswith('.'):
+                    ext = '.' + ext
+                self.metadata_extensions.add(ext.lower())
         
         # STRM 文件匹配模式：xxx.(ext).strm
         self.strm_pattern = re.compile(r'(.+)\.\(([^.]+)\)\.strm$', re.IGNORECASE)
@@ -42,6 +71,27 @@ class StrmScanner:
             return ctypes.windll.shell32.IsUserAnAdmin()
         except Exception:
             return False
+    
+    def get_supported_extensions(self) -> Dict[str, Set[str]]:
+        """获取支持的扩展名列表"""
+        return {
+            "video_extensions": self.video_extensions,
+            "metadata_extensions": self.metadata_extensions
+        }
+    
+    def add_video_extension(self, extension: str):
+        """添加自定义视频扩展名"""
+        if not extension.startswith('.'):
+            extension = '.' + extension
+        self.video_extensions.add(extension.lower())
+        logger.info(f"添加视频扩展名: {extension}")
+    
+    def add_metadata_extension(self, extension: str):
+        """添加自定义元数据扩展名"""
+        if not extension.startswith('.'):
+            extension = '.' + extension
+        self.metadata_extensions.add(extension.lower())
+        logger.info(f"添加元数据扩展名: {extension}")
     
     def scan_directory(
         self, 
@@ -72,6 +122,8 @@ class StrmScanner:
             raise ValueError(f"路径不是目录: {directory}")
         
         logger.info(f"开始扫描目录: {directory} (递归: {recursive}, 预览模式: {dry_run})")
+        logger.info(f"支持的视频格式: {', '.join(sorted(self.video_extensions))}")
+        logger.info(f"支持的元数据格式: {', '.join(sorted(self.metadata_extensions))}")
         
         # 收集所有 .strm 文件
         strm_files = self._find_strm_files(directory_path, recursive)
