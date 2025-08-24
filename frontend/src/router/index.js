@@ -4,6 +4,7 @@ import { ElMessage } from 'element-plus'
 // 路由组件
 import Home from '@/views/Home.vue'
 import Scan from '@/views/Scan.vue'
+import ScanConfigs from '@/views/ScanConfigs.vue'
 import Schedule from '@/views/Schedule.vue'
 import Logs from '@/views/Logs.vue'
 import Settings from '@/views/Settings.vue'
@@ -26,6 +27,15 @@ const routes = [
     meta: {
       title: '扫描管理',
       icon: 'Search'
+    }
+  },
+  {
+    path: '/scan-configs',
+    name: 'ScanConfigs',
+    component: ScanConfigs,
+    meta: {
+      title: '扫描配置',
+      icon: 'Files'
     }
   },
   {

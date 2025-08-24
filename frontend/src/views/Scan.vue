@@ -84,6 +84,50 @@
           </el-checkbox>
         </el-form-item>
 
+        <el-form-item label="自定义视频扩展名">
+          <el-select
+            v-model="scanConfig.custom_video_extensions"
+            multiple
+            filterable
+            allow-create
+            default-first-option
+            placeholder="请输入或选择自定义视频扩展名"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="ext in commonVideoExtensions"
+              :key="ext"
+              :label="ext"
+              :value="ext"
+            />
+          </el-select>
+          <div class="form-tip">
+            添加自定义视频扩展名，支持更多格式的 STRM 文件
+          </div>
+        </el-form-item>
+
+        <el-form-item label="自定义元数据扩展名">
+          <el-select
+            v-model="scanConfig.custom_metadata_extensions"
+            multiple
+            filterable
+            allow-create
+            default-first-option
+            placeholder="请输入或选择自定义元数据扩展名"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="ext in commonMetadataExtensions"
+              :key="ext"
+              :label="ext"
+              :value="ext"
+            />
+          </el-select>
+          <div class="form-tip">
+            添加自定义元数据扩展名，支持更多格式的元数据文件
+          </div>
+        </el-form-item>
+
         <el-form-item>
           <el-button type="primary" @click="handleScan" :loading="scanning">
             <el-icon><Search /></el-icon>
@@ -179,8 +223,14 @@ const scanConfig = reactive({
   directory: '',
   target_formats: ['mp4', 'mkv'],
   recursive: true,
-  dry_run: false
+  dry_run: false,
+  custom_video_extensions: [],
+  custom_metadata_extensions: []
 })
+
+// 常用扩展名
+const commonVideoExtensions = ['mp4', 'mkv', 'avi', 'mov', 'wmv', 'flv', 'webm', 'm4v', 'ts']
+const commonMetadataExtensions = ['nfo', 'srt', 'ass', 'jpg', 'png', 'json', 'xml', 'txt']
 
 // 表单验证规则
 const scanRules = {
@@ -286,6 +336,9 @@ const resetForm = () => {
   scanForm.value.resetFields()
   scanResult.value = null
   pathSuggestions.value = []
+  // 重置自定义扩展名
+  scanConfig.custom_video_extensions = []
+  scanConfig.custom_metadata_extensions = []
 }
 </script>
 

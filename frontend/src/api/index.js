@@ -93,7 +93,22 @@ export const configApi = {
   enableScheduledTask: (taskId) => api.post(`/config/schedule/enable/${taskId}`),
   disableScheduledTask: (taskId) => api.post(`/config/schedule/disable/${taskId}`),
   runTaskNow: (taskId) => api.post(`/config/schedule/run/${taskId}`),
-  getSchedulerStatus: () => api.get('/config/schedule/status')
+  getSchedulerStatus: () => api.get('/config/schedule/status'),
+  
+  // 扩展名管理
+  getExtensions: () => api.get('/config/extensions'),
+  addVideoExtension: (extension) => api.post('/config/extensions/video', null, { params: { extension } }),
+  addMetadataExtension: (extension) => api.post('/config/extensions/metadata', null, { params: { extension } }),
+  addExtensionsBatch: (data) => api.post('/config/extensions/batch', data),
+  
+  // 扫描配置管理
+  getScanConfigs: () => api.get('/config/scan-configs'),
+  getScanConfig: (configId) => api.get(`/config/scan-configs/${configId}`),
+  createScanConfig: (data) => api.post('/config/scan-configs', data),
+  updateScanConfig: (configId, data) => api.put(`/config/scan-configs/${configId}`, data),
+  deleteScanConfig: (configId) => api.delete(`/config/scan-configs/${configId}`),
+  executeScanConfig: (configId, dryRun = false) => 
+    api.post(`/config/scan-configs/${configId}/execute`, null, { params: { dry_run: dryRun } })
 }
 
 // 日志管理 API

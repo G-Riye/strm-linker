@@ -34,6 +34,10 @@
                   <el-icon><Search /></el-icon>
                   <span>扫描管理</span>
                 </el-menu-item>
+                <el-menu-item index="/scan-configs">
+                  <el-icon><Files /></el-icon>
+                  <span>扫描配置</span>
+                </el-menu-item>
                 <el-menu-item index="/schedule">
                   <el-icon><Timer /></el-icon>
                   <span>定时任务</span>
