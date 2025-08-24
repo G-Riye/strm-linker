@@ -12,6 +12,7 @@ from services.logger import get_logger
 from services.scanner import StrmScanner
 from services.watcher import WatcherService
 from services.scheduler import SchedulerService
+from services.config_manager import ConfigManager
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -23,6 +24,29 @@ class ScanConfig(BaseModel):
     target_formats: List[str] = Field(default=["mp4", "mkv"], description="目标视频格式")
     recursive: bool = Field(default=True, description="是否递归扫描子目录")
     dry_run: bool = Field(default=False, description="是否仅预览不执行")
+    custom_video_extensions: List[str] = Field(default=[], description="自定义视频扩展名")
+    custom_metadata_extensions: List[str] = Field(default=[], description="自定义元数据扩展名")
+
+class SavedScanConfig(BaseModel):
+    """保存的扫描配置"""
+    config_id: str = Field(..., description="配置ID")
+    name: str = Field(..., description="配置名称")
+    description: str = Field(default="", description="配置描述")
+    directory: str = Field(..., description="扫描目录路径")
+    recursive: bool = Field(default=True, description="是否递归扫描子目录")
+    custom_video_extensions: List[str] = Field(default=[], description="自定义视频扩展名")
+    custom_metadata_extensions: List[str] = Field(default=[], description="自定义元数据扩展名")
+    created_at: str = Field(default="", description="创建时间")
+    updated_at: str = Field(default="", description="更新时间")
+
+class ScanConfigUpdate(BaseModel):
+    """扫描配置更新"""
+    name: Optional[str] = Field(None, description="配置名称")
+    description: Optional[str] = Field(None, description="配置描述")
+    directory: Optional[str] = Field(None, description="扫描目录路径")
+    recursive: Optional[bool] = Field(None, description="是否递归扫描子目录")
+    custom_video_extensions: Optional[List[str]] = Field(None, description="自定义视频扩展名")
+    custom_metadata_extensions: Optional[List[str]] = Field(None, description="自定义元数据扩展名")
 
 class ScanResult(BaseModel):
     """扫描结果"""
@@ -51,6 +75,9 @@ class ScheduleConfig(BaseModel):
     schedule_params: Dict[str, Any] = Field(..., description="调度参数")
     enabled: bool = Field(default=True, description="是否启用")
     recursive: bool = Field(default=True, description="是否递归")
+    scan_config_id: Optional[str] = Field(None, description="关联的扫描配置ID")
+    custom_video_extensions: List[str] = Field(default=[], description="自定义视频扩展名")
+    custom_metadata_extensions: List[str] = Field(default=[], description="自定义元数据扩展名")
 
 class ExtensionConfig(BaseModel):
     """扩展名配置"""
@@ -59,6 +86,7 @@ class ExtensionConfig(BaseModel):
 
 # 全局服务实例（将在 main.py 中注入）
 scanner = StrmScanner()
+config_manager = ConfigManager()
 watcher_service = None
 scheduler_service = None
 
@@ -76,8 +104,14 @@ async def scan_directory(config: ScanConfig, background_tasks: BackgroundTasks):
         
         logger.info(f"开始扫描目录: {config.directory}")
         
+        # 创建临时扫描器实例，应用自定义扩展名
+        temp_scanner = StrmScanner(
+            custom_video_extensions=config.custom_video_extensions,
+            custom_metadata_extensions=config.custom_metadata_extensions
+        )
+        
         # 执行扫描
-        result = scanner.scan_directory(
+        result = temp_scanner.scan_directory(
             directory=config.directory,
             target_formats=config.target_formats,
             recursive=config.recursive,
@@ -192,20 +226,45 @@ async def get_scheduled_tasks():
 @router.post("/schedule/add")
 async def add_scheduled_task(config: ScheduleConfig):
     """添加定时任务"""
-    global scheduler_service
+    global scheduler_service, config_manager
     
     if not scheduler_service:
         raise HTTPException(status_code=500, detail="调度服务未初始化")
     
-    success = scheduler_service.add_scan_task(
-        task_id=config.task_id,
-        directory=config.directory,
-        target_formats=config.target_formats,
-        schedule_type=config.schedule_type,
-        schedule_params=config.schedule_params,
-        enabled=config.enabled,
-        recursive=config.recursive
-    )
+    # 如果指定了扫描配置ID，验证配置是否存在
+    scan_config = None
+    if config.scan_config_id:
+        scan_config = config_manager.get_config(config.scan_config_id)
+        if not scan_config:
+            raise HTTPException(status_code=400, detail=f"扫描配置不存在: {config.scan_config_id}")
+    
+    # 使用扫描配置或直接参数
+    if scan_config:
+        # 使用保存的扫描配置
+        success = scheduler_service.add_scan_task(
+            task_id=config.task_id,
+            directory=scan_config["directory"],
+            target_formats=config.target_formats,
+            schedule_type=config.schedule_type,
+            schedule_params=config.schedule_params,
+            enabled=config.enabled,
+            recursive=scan_config.get("recursive", True),
+            custom_video_extensions=scan_config.get("custom_video_extensions", []),
+            custom_metadata_extensions=scan_config.get("custom_metadata_extensions", [])
+        )
+    else:
+        # 使用直接参数
+        success = scheduler_service.add_scan_task(
+            task_id=config.task_id,
+            directory=config.directory,
+            target_formats=config.target_formats,
+            schedule_type=config.schedule_type,
+            schedule_params=config.schedule_params,
+            enabled=config.enabled,
+            recursive=config.recursive,
+            custom_video_extensions=config.custom_video_extensions,
+            custom_metadata_extensions=config.custom_metadata_extensions
+        )
     
     if success:
         return {"message": f"成功添加定时任务: {config.task_id}"}
@@ -344,6 +403,130 @@ async def add_extensions_batch(config: ExtensionConfig):
     except Exception as e:
         logger.error(f"批量添加扩展名失败: {e}")
         raise HTTPException(status_code=400, detail=str(e))
+
+# 扫描配置管理相关接口
+@router.get("/scan-configs")
+async def get_scan_configs():
+    """获取所有扫描配置"""
+    global config_manager
+    
+    configs = config_manager.get_all_configs()
+    return {"configs": configs}
+
+@router.get("/scan-configs/{config_id}")
+async def get_scan_config(config_id: str):
+    """获取指定扫描配置"""
+    global config_manager
+    
+    config = config_manager.get_config(config_id)
+    if not config:
+        raise HTTPException(status_code=404, detail=f"配置不存在: {config_id}")
+    
+    return config
+
+@router.post("/scan-configs")
+async def create_scan_config(config_data: SavedScanConfig):
+    """创建新的扫描配置"""
+    global config_manager
+    
+    # 验证配置数据
+    errors = config_manager.validate_config(config_data.dict())
+    if errors:
+        raise HTTPException(status_code=400, detail={"errors": errors})
+    
+    # 检查名称是否已存在
+    existing_config = config_manager.get_config_by_name(config_data.name)
+    if existing_config:
+        raise HTTPException(status_code=400, detail=f"配置名称已存在: {config_data.name}")
+    
+    # 创建配置
+    config_id = config_manager.create_config(config_data.dict())
+    
+    return {
+        "message": "扫描配置创建成功",
+        "config_id": config_id
+    }
+
+@router.put("/scan-configs/{config_id}")
+async def update_scan_config(config_id: str, config_data: ScanConfigUpdate):
+    """更新扫描配置"""
+    global config_manager
+    
+    # 检查配置是否存在
+    existing_config = config_manager.get_config(config_id)
+    if not existing_config:
+        raise HTTPException(status_code=404, detail=f"配置不存在: {config_id}")
+    
+    # 验证配置数据
+    update_data = {k: v for k, v in config_data.dict().items() if v is not None}
+    if update_data:
+        errors = config_manager.validate_config(update_data)
+        if errors:
+            raise HTTPException(status_code=400, detail={"errors": errors})
+        
+        # 检查名称是否与其他配置冲突
+        if "name" in update_data:
+            existing_config_with_name = config_manager.get_config_by_name(update_data["name"])
+            if existing_config_with_name and existing_config_with_name["config_id"] != config_id:
+                raise HTTPException(status_code=400, detail=f"配置名称已存在: {update_data['name']}")
+        
+        # 更新配置
+        success = config_manager.update_config(config_id, update_data)
+        if not success:
+            raise HTTPException(status_code=500, detail="更新配置失败")
+    
+    return {"message": "扫描配置更新成功"}
+
+@router.delete("/scan-configs/{config_id}")
+async def delete_scan_config(config_id: str):
+    """删除扫描配置"""
+    global config_manager
+    
+    success = config_manager.delete_config(config_id)
+    if not success:
+        raise HTTPException(status_code=404, detail=f"配置不存在: {config_id}")
+    
+    return {"message": "扫描配置删除成功"}
+
+@router.post("/scan-configs/{config_id}/execute")
+async def execute_scan_config(config_id: str, dry_run: bool = False):
+    """执行指定的扫描配置"""
+    global config_manager
+    
+    # 获取配置
+    config = config_manager.get_config(config_id)
+    if not config:
+        raise HTTPException(status_code=404, detail=f"配置不存在: {config_id}")
+    
+    try:
+        # 验证目录
+        directory_path = Path(config["directory"])
+        if not directory_path.exists():
+            raise HTTPException(status_code=400, detail=f"目录不存在: {config['directory']}")
+        
+        if not directory_path.is_dir():
+            raise HTTPException(status_code=400, detail=f"路径不是目录: {config['directory']}")
+        
+        logger.info(f"执行扫描配置: {config['name']} (ID: {config_id})")
+        
+        # 创建扫描器实例，应用自定义扩展名
+        temp_scanner = StrmScanner(
+            custom_video_extensions=config.get("custom_video_extensions", []),
+            custom_metadata_extensions=config.get("custom_metadata_extensions", [])
+        )
+        
+        # 执行扫描
+        result = temp_scanner.scan_directory(
+            directory=config["directory"],
+            recursive=config.get("recursive", True),
+            dry_run=dry_run
+        )
+        
+        return ScanResult(**result)
+        
+    except Exception as e:
+        logger.error(f"执行扫描配置失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # 服务注入函数（在 main.py 中调用）
 def set_services(watcher: WatcherService, scheduler: SchedulerService):

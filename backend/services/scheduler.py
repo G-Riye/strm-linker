@@ -84,7 +84,9 @@ class SchedulerService:
         schedule_type: str,  # 'cron' or 'interval'
         schedule_params: Dict,
         enabled: bool = True,
-        recursive: bool = True
+        recursive: bool = True,
+        custom_video_extensions: List[str] = None,
+        custom_metadata_extensions: List[str] = None
     ) -> bool:
         """
         添加扫描任务
@@ -126,6 +128,8 @@ class SchedulerService:
                 "schedule_params": schedule_params,
                 "recursive": recursive,
                 "enabled": enabled,
+                "custom_video_extensions": custom_video_extensions or [],
+                "custom_metadata_extensions": custom_metadata_extensions or [],
                 "created_at": datetime.now(),
                 "last_run": None,
                 "run_count": 0
@@ -251,8 +255,14 @@ class SchedulerService:
         logger.info(f"开始执行定时扫描任务: {task_id}")
         
         try:
+            # 创建扫描器实例，应用自定义扩展名
+            temp_scanner = StrmScanner(
+                custom_video_extensions=task_config.get("custom_video_extensions", []),
+                custom_metadata_extensions=task_config.get("custom_metadata_extensions", [])
+            )
+            
             # 执行扫描
-            result = self.scanner.scan_directory(
+            result = temp_scanner.scan_directory(
                 directory=task_config["directory"],
                 target_formats=task_config["target_formats"],
                 recursive=task_config["recursive"],
@@ -328,6 +338,8 @@ class SchedulerService:
                 "schedule_params": config["schedule_params"],
                 "recursive": config["recursive"],
                 "enabled": config["enabled"],
+                "custom_video_extensions": config.get("custom_video_extensions", []),
+                "custom_metadata_extensions": config.get("custom_metadata_extensions", []),
                 "created_at": config["created_at"].isoformat() if config["created_at"] else None,
                 "last_run": config["last_run"].isoformat() if config["last_run"] else None,
                 "run_count": config["run_count"],

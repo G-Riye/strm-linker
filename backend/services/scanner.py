@@ -274,59 +274,12 @@ class StrmScanner:
             links_created = 0
             created_links = []
             
-            # 1. 创建视频软链接 (xxx.mp4 -> xxx.(mp4).strm)
+            # 1. 视频软链接创建已禁用 - 只处理元数据文件
             video_link_name = f"{base_name}.{video_ext}"
             video_link_path = parent_dir / video_link_name
             
-            # 安全检查：如果目标视频文件已存在且不是软链接，则跳过
-            if video_link_path.exists():
-                if video_link_path.is_file() and not video_link_path.is_symlink():
-                    logger.warning(f"跳过创建视频链接，文件已存在且不是软链接: {video_link_path}")
-                    # 继续处理元数据文件，但不创建视频链接
-                elif video_link_path.is_symlink():
-                    # 如果是软链接，检查是否指向正确的文件
-                    try:
-                        target = video_link_path.readlink()
-                        if target == strm_file:
-                            logger.info(f"视频软链接已存在且正确: {video_link_path} -> {strm_file}")
-                        else:
-                            logger.warning(f"视频软链接存在但指向错误目标: {video_link_path} -> {target} (期望: {strm_file})")
-                    except Exception as e:
-                        logger.warning(f"检查视频软链接失败: {video_link_path}, 错误: {e}")
-            else:
-                # 文件不存在，可以安全创建
-                if not dry_run:
-                    try:
-                        if self.is_windows and not self.has_admin_rights:
-                            # Windows 下没有管理员权限，尝试创建硬链接
-                            try:
-                                video_link_path.hardlink_to(strm_file)
-                                logger.info(f"创建视频硬链接: {video_link_path} -> {strm_file}")
-                                links_created += 1
-                                created_links.append(str(video_link_path))
-                            except OSError:
-                                # 如果硬链接也失败，尝试复制文件
-                                import shutil
-                                shutil.copy2(strm_file, video_link_path)
-                                logger.info(f"复制视频文件: {video_link_path} <- {strm_file}")
-                                links_created += 1
-                                created_links.append(str(video_link_path))
-                        else:
-                            video_link_path.symlink_to(strm_file)
-                            logger.info(f"创建视频软链接: {video_link_path} -> {strm_file}")
-                            links_created += 1
-                            created_links.append(str(video_link_path))
-                    except OSError as e:
-                        logger.error(f"创建视频链接失败: {e}")
-                        return {
-                            "success": False,
-                            "error": f"创建视频链接失败: {str(e)}",
-                            "links_created": 0
-                        }
-                else:
-                    links_created += 1
-                    created_links.append(str(video_link_path))
-                    logger.info(f"[预览] 将创建视频软链接: {video_link_path} -> {strm_file}")
+            # 完全跳过视频软链接创建
+            logger.info(f"跳过视频软链接创建: {video_link_path} (功能已禁用)")
             
             # 2. 查找并创建对应的元数据软链接
             metadata_links_created = self._create_metadata_links(
