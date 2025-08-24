@@ -278,7 +278,23 @@ class StrmScanner:
             video_link_name = f"{base_name}.{video_ext}"
             video_link_path = parent_dir / video_link_name
             
-            if not video_link_path.exists():
+            # 安全检查：如果目标视频文件已存在且不是软链接，则跳过
+            if video_link_path.exists():
+                if video_link_path.is_file() and not video_link_path.is_symlink():
+                    logger.warning(f"跳过创建视频链接，文件已存在且不是软链接: {video_link_path}")
+                    # 继续处理元数据文件，但不创建视频链接
+                elif video_link_path.is_symlink():
+                    # 如果是软链接，检查是否指向正确的文件
+                    try:
+                        target = video_link_path.readlink()
+                        if target == strm_file:
+                            logger.info(f"视频软链接已存在且正确: {video_link_path} -> {strm_file}")
+                        else:
+                            logger.warning(f"视频软链接存在但指向错误目标: {video_link_path} -> {target} (期望: {strm_file})")
+                    except Exception as e:
+                        logger.warning(f"检查视频软链接失败: {video_link_path}, 错误: {e}")
+            else:
+                # 文件不存在，可以安全创建
                 if not dry_run:
                     try:
                         if self.is_windows and not self.has_admin_rights:
@@ -356,35 +372,52 @@ class StrmScanner:
                 metadata_link_name = f"{base_name}.({video_ext}){metadata_ext}"
                 metadata_link_path = parent_dir / metadata_link_name
                 
-                if not metadata_link_path.exists():
-                    if not dry_run:
+                # 安全检查：如果目标元数据文件已存在且不是软链接，则跳过
+                if metadata_link_path.exists():
+                    if metadata_link_path.is_file() and not metadata_link_path.is_symlink():
+                        logger.warning(f"跳过创建元数据链接，文件已存在且不是软链接: {metadata_link_path}")
+                        continue
+                    elif metadata_link_path.is_symlink():
+                        # 如果是软链接，检查是否指向正确的文件
                         try:
-                            if self.is_windows and not self.has_admin_rights:
-                                # Windows 下没有管理员权限，尝试创建硬链接
-                                try:
-                                    metadata_link_path.hardlink_to(source_metadata_file)
-                                    logger.info(f"创建元数据硬链接: {metadata_link_path} -> {source_metadata_file}")
-                                    links_created += 1
-                                    created_links.append(str(metadata_link_path))
-                                except OSError:
-                                    # 如果硬链接也失败，尝试复制文件
-                                    import shutil
-                                    shutil.copy2(source_metadata_file, metadata_link_path)
-                                    logger.info(f"复制元数据文件: {metadata_link_path} <- {source_metadata_file}")
-                                    links_created += 1
-                                    created_links.append(str(metadata_link_path))
+                            target = metadata_link_path.readlink()
+                            if target == source_metadata_file:
+                                logger.info(f"元数据软链接已存在且正确: {metadata_link_path} -> {source_metadata_file}")
                             else:
-                                metadata_link_path.symlink_to(source_metadata_file)
-                                logger.info(f"创建元数据软链接: {metadata_link_path} -> {source_metadata_file}")
+                                logger.warning(f"元数据软链接存在但指向错误目标: {metadata_link_path} -> {target} (期望: {source_metadata_file})")
+                        except Exception as e:
+                            logger.warning(f"检查元数据软链接失败: {metadata_link_path}, 错误: {e}")
+                        continue
+                
+                # 文件不存在，可以安全创建
+                if not dry_run:
+                    try:
+                        if self.is_windows and not self.has_admin_rights:
+                            # Windows 下没有管理员权限，尝试创建硬链接
+                            try:
+                                metadata_link_path.hardlink_to(source_metadata_file)
+                                logger.info(f"创建元数据硬链接: {metadata_link_path} -> {source_metadata_file}")
                                 links_created += 1
                                 created_links.append(str(metadata_link_path))
-                        except OSError as e:
-                            logger.error(f"创建元数据链接失败: {metadata_link_path} -> {source_metadata_file}: {e}")
-                            # 继续处理其他文件，不中断整个流程
-                    else:
-                        links_created += 1
-                        created_links.append(str(metadata_link_path))
-                        logger.info(f"[预览] 将创建元数据软链接: {metadata_link_path} -> {source_metadata_file}")
+                            except OSError:
+                                # 如果硬链接也失败，尝试复制文件
+                                import shutil
+                                shutil.copy2(source_metadata_file, metadata_link_path)
+                                logger.info(f"复制元数据文件: {metadata_link_path} <- {source_metadata_file}")
+                                links_created += 1
+                                created_links.append(str(metadata_link_path))
+                        else:
+                            metadata_link_path.symlink_to(source_metadata_file)
+                            logger.info(f"创建元数据软链接: {metadata_link_path} -> {source_metadata_file}")
+                            links_created += 1
+                            created_links.append(str(metadata_link_path))
+                    except OSError as e:
+                        logger.error(f"创建元数据链接失败: {metadata_link_path} -> {source_metadata_file}: {e}")
+                        # 继续处理其他文件，不中断整个流程
+                else:
+                    links_created += 1
+                    created_links.append(str(metadata_link_path))
+                    logger.info(f"[预览] 将创建元数据软链接: {metadata_link_path} -> {source_metadata_file}")
         
         return {
             "count": links_created,
