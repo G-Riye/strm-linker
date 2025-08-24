@@ -33,6 +33,7 @@ class ScanResult(BaseModel):
     created_links: int
     skipped: int
     errors: List[Dict]
+    details: List[Dict]
     duration: float
 
 class WatchConfig(BaseModel):

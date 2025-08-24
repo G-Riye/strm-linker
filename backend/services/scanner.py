@@ -22,7 +22,7 @@ class StrmScanner:
     def __init__(self):
         self.supported_video_exts = {'.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm'}
         self.subtitle_exts = {'.srt', '.ass', '.ssa', '.vtt', '.sub', '.idx'}
-        self.strm_pattern = re.compile(r'(.+)\.(mp4|mkv|avi|mov|wmv|flv|webm)\.strm$', re.IGNORECASE)
+        self.strm_pattern = re.compile(r'(.+)\.\((mp4|mkv|avi|mov|wmv|flv|webm)\)\.strm$', re.IGNORECASE)
         self.is_windows = os.name == 'nt'
         self.has_admin_rights = self._check_admin_rights() if self.is_windows else True
     
@@ -77,7 +77,9 @@ class StrmScanner:
                 "total_files": 0,
                 "processed": 0,
                 "created_links": 0,
+                "skipped": 0,
                 "errors": [],
+                "details": [],
                 "duration": time.time() - start_time
             }
         
