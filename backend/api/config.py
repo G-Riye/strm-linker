@@ -27,6 +27,15 @@ class ScanConfig(BaseModel):
     custom_video_extensions: List[str] = Field(default=[], description="自定义视频扩展名")
     custom_metadata_extensions: List[str] = Field(default=[], description="自定义元数据扩展名")
 
+class CreateScanConfig(BaseModel):
+    """创建扫描配置"""
+    name: str = Field(..., description="配置名称")
+    description: str = Field(default="", description="配置描述")
+    directory: str = Field(..., description="扫描目录路径")
+    recursive: bool = Field(default=True, description="是否递归扫描子目录")
+    custom_video_extensions: List[str] = Field(default=[], description="自定义视频扩展名")
+    custom_metadata_extensions: List[str] = Field(default=[], description="自定义元数据扩展名")
+
 class SavedScanConfig(BaseModel):
     """保存的扫描配置"""
     config_id: str = Field(..., description="配置ID")
@@ -425,7 +434,7 @@ async def get_scan_config(config_id: str):
     return config
 
 @router.post("/scan-configs")
-async def create_scan_config(config_data: SavedScanConfig):
+async def create_scan_config(config_data: CreateScanConfig):
     """创建新的扫描配置"""
     global config_manager
     

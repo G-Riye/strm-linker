@@ -319,9 +319,10 @@ const saveConfig = async () => {
     await configFormRef.value.validate()
     saving.value = true
     
-    // 确保扩展名数组是有效的
+    // 确保扩展名数组是有效的，并移除config_id字段（如果存在）
+    const { config_id, ...formDataWithoutId } = configForm
     const formData = {
-      ...configForm,
+      ...formDataWithoutId,
       custom_video_extensions: Array.isArray(configForm.custom_video_extensions) 
         ? configForm.custom_video_extensions.filter(ext => ext && typeof ext === 'string')
         : [],
