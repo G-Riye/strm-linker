@@ -107,7 +107,7 @@
         <el-form-item label="扫描目录" prop="directory">
           <el-input v-model="configForm.directory" placeholder="请输入扫描目录路径">
             <template #append>
-              <el-button @click="browseDirectory">浏览</el-button>
+              <el-button @click="showDirectoryBrowser = true">浏览</el-button>
             </template>
           </el-input>
         </el-form-item>
@@ -233,6 +233,13 @@
         </div>
       </div>
     </el-dialog>
+
+    <!-- 目录浏览器对话框 -->
+    <DirectoryBrowser
+      v-model="showDirectoryBrowser"
+      @select="handleDirectorySelect"
+      :initial-path="configForm.directory"
+    />
   </div>
 </template>
 
@@ -241,6 +248,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Edit, Delete, VideoPlay, View } from '@element-plus/icons-vue'
 import { configApi } from '@/api'
+import DirectoryBrowser from '@/components/DirectoryBrowser.vue'
 
 // 响应式数据
 const loading = ref(false)
@@ -248,6 +256,7 @@ const saving = ref(false)
 const configs = ref([])
 const showCreateDialog = ref(false)
 const showResultDialog = ref(false)
+const showDirectoryBrowser = ref(false)
 const editingConfig = ref(null)
 const executionResult = ref(null)
 
@@ -290,9 +299,14 @@ const loadConfigs = async () => {
 }
 
 // 浏览目录
-const browseDirectory = async () => {
-  // 这里可以集成目录浏览功能
-  ElMessage.info('目录浏览功能待实现')
+const browseDirectory = () => {
+  showDirectoryBrowser.value = true
+}
+
+// 处理目录选择
+const handleDirectorySelect = (path) => {
+  configForm.directory = path
+  showDirectoryBrowser.value = false
 }
 
 // 保存配置
